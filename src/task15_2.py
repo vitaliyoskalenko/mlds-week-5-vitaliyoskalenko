@@ -12,19 +12,43 @@ class DBSCAN:
         """
         Perform DBSCAN clustering on the input data.
         """
-
+        self.labels = [None] * len(data)
+        cluster_id = 0
+        for point_idx in range(len(data)):
+            if self.labels[point_idx] is not None:
+                continue
+            neighbors = self.region_query(data, point_idx)
+            if len(neighbors) < self.min_samples:
+                self.labels[point_idx] = self.noise_label
+                continue
+            self.expand_cluster(data, point_idx, neighbors, cluster_id)
+            cluster_id += 1
 
     def expand_cluster(self, data, point_idx, neighbors, cluster_id):
         """
         Expand the cluster from the core point.
         """
-
+        self.labels[point_idx] = cluster_id
+        queue = deque(neighbors)
+        while queue:
+            idx = queue.popleft()
+            if self.labels[idx] == self.noise_label:
+                self.labels[idx] = cluster_id
+            if self.labels[idx] is not None:
+                continue
+            self.labels[idx] = cluster_id
+            idx_neighbors = self.region_query(data, idx)
+            if len(idx_neighbors) >= self.min_samples:
+                queue.extend(idx_neighbors)
 
     def region_query(self, data, point_idx):
         """
         Find all points within `eps` distance of the given point.
         """
-
+        neighbors = [
+            i for i in range(len(data))
+            if self.euclidean_distance(data[point_idx], data[i]) <= self.eps
+        ]
         return neighbors
 
 
